@@ -20,7 +20,7 @@ def updateShade(id, name, batteryStrength, position, optionsId):
     if (unit == False):
         unit = FreeUnit()
         Domoticz.Log("Found new shade: " + name + " battlevel: " + str(batteryStrength) + " position: " + position)
-        Domoticz.Device(Name=name, DeviceID=id, Unit=unit, TypeName="Switch", SwitchType=16, Used=1).Create()
+        Domoticz.Device(Name=name, DeviceID=id, Unit=unit, TypeName="Switch", Switchtype=16, Used=1).Create()
     if position == 0:
         nv = 0
     elif position == 100:
@@ -57,7 +57,7 @@ def updateScenes():
             id = scenes['id']
             if (GetDomoDeviceInfo(id) == False):
                 Domoticz.Log("Found new scene: " + str(id) + " with name " + name)
-                Domoticz.Device(Name=name, DeviceID=str(id), Unit=FreeUnit(), TypeName="Switch", SwitchType=9, Used=1).Create()
+                Domoticz.Device(Name=name, DeviceID=str(id), Unit=FreeUnit(), TypeName="Switch", Switchtype=9, Used=1).Create()
     except Exception as err:
         Domoticz.Error("Error retrieving shades and scenes: " + str(err))
 
