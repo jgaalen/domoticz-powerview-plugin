@@ -1,0 +1,1 @@
+# domoticz-powerview-plugin
