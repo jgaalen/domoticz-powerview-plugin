@@ -33,19 +33,23 @@ def updateShade(id, name, batteryStrength, position, optionsId):
 
 def updateShades():
     baseurl = "http://" + Parameters["Address"]
-    shades = requests.get(baseurl + "/api/shades").json()
 
-    for shade in shades['shadeData']:
-        name = base64.b64decode(shade['name']).decode('utf-8')
-        id = str(shade['id'])
-        batteryStrength = int (shade['batteryStrength'] * 100 / 255)
-        position1 = str(int(shade['positions']['position1'] * 100 / 65535))
-        if 'position2' in shade['positions']:
-            position2 = str(int(shade['positions']['position2'] * 100 / 65535))
-            updateShade(id + '_1', name + ' Bottom', batteryStrength, position1, id)
-            updateShade(id + '_2', name + ' Top', batteryStrength, position2, id)
-        else:
-            updateShade(id, name, batteryStrength, position1, id)
+    try:
+        shades = requests.get(baseurl + "/api/shades").json()
+
+        for shade in shades['shadeData']:
+            name = base64.b64decode(shade['name']).decode('utf-8')
+            id = str(shade['id'])
+            batteryStrength = int (shade['batteryStrength'] * 100 / 255)
+            position1 = str(int(shade['positions']['position1'] * 100 / 65535))
+            if 'position2' in shade['positions']:
+                position2 = str(int(shade['positions']['position2'] * 100 / 65535))
+                updateShade(id + '_1', name + ' Bottom', batteryStrength, position1, id)
+                updateShade(id + '_2', name + ' Top', batteryStrength, position2, id)
+            else:
+                updateShade(id, name, batteryStrength, position1, id)
+    except Exception as err:
+        Domoticz.Error("Error retrieving shades: " + str(err))
 
 def updateScenes():
     baseurl = "http://" + Parameters["Address"]
@@ -62,7 +66,7 @@ def updateScenes():
                 Devices[unit].Update(nValue=0, sValue='0')
 
     except Exception as err:
-        Domoticz.Error("Error retrieving shades and scenes: " + str(err))
+        Domoticz.Error("Error retrieving scenes: " + str(err))
 
 def putShade(id):
     baseurl = "http://" + Parameters["Address"]
@@ -97,7 +101,6 @@ def putShade(id):
 
     except Exception as err:
         Domoticz.Error("Error updating shade: " + str(err))
-
 
 def onStart():
     Domoticz.Log("Hunter Douglas PowerView plugin start")
