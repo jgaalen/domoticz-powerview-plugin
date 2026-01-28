@@ -3,7 +3,7 @@
 Powerview shades
 """
 """
-<plugin key="powerview" name="Hunter Douglas PowerView" version="1.1" author="Joerek van Gaalen">
+<plugin key="powerview" name="Hunter Douglas PowerView" version="1.2" author="Joerek van Gaalen">
     <params>
         <param field="Address" label="IP/Host Address" width="200px" required="true" default="127.0.0.1"/>
         <param field="Mode1" label="Reading Interval sec." width="40px" required="true" default="60" />
@@ -39,12 +39,6 @@ def updateShade(id, name, batteryStrength, position, optionsId):
         unit = FreeUnit()
         Domoticz.Log("Found new shade: " + name + " " + str(unit) + " (" + id + ") battlevel: " + str(batteryStrength) + " position: " + position)
         Domoticz.Device(Name=name, DeviceID=id, Unit=unit, Type=244, Subtype=73, Switchtype=13, Used=1).Create()
-    else:
-        # Check if existing device has wrong SwitchType (16 instead of 13)
-        if Devices[unit].SwitchType == 16:
-            Domoticz.Log("Migrating shade " + name + " from SwitchType 16 to 13 (Blinds Percentage)")
-            Devices[unit].Delete()
-            Domoticz.Device(Name=name, DeviceID=id, Unit=unit, Type=244, Subtype=73, Switchtype=13, Used=1).Create()
     
     if position == 0:
         nv = 0
@@ -69,7 +63,11 @@ def updateShades():
             batteryStrength = int(shade['batteryStrength'] * 100 / 255)
             position1 = str(int(shade['positions']['position1'] * 100 / 65535))
             if 'position2' in shade['positions']:
-                position2 = str(int(shade['positions']['position2'] * 100 / 65535))
+                # For top-down/bottom-up shades:
+                # position1 = bottom bar (0% = down/closed, 100% = up/open)
+                # position2 = top bar - INVERTED so 100% = up/open, 0% = down/closed
+                position2_raw = int(shade['positions']['position2'] * 100 / 65535)
+                position2 = str(100 - position2_raw)
                 updateShade(id + '_1', name + ' Bottom', batteryStrength, position1, id)
                 updateShade(id + '_2', name + ' Top', batteryStrength, position2, id)
             else:
@@ -107,20 +105,24 @@ def putShade(id, level):
     shadeId = Devices[unit].Options.get('id', id)
 
     if id.endswith('_1'):
+        # Bottom bar - no inversion needed
         id2 = id[:-1] + '2'
         unit2 = GetDomoDeviceInfo(id2)
         body['shade']['positions']['position1'] = convertLevelToPosition(level)
         body['shade']['positions']['posKind1'] = 1
         if unit2:
-            body['shade']['positions']['position2'] = convertLevelToPosition(Devices[unit2].sValue)
+            # Get top bar value and invert it back for API
+            top_level = int(Devices[unit2].sValue) if Devices[unit2].sValue else 0
+            body['shade']['positions']['position2'] = convertLevelToPosition(100 - top_level)
             body['shade']['positions']['posKind2'] = 2
     elif id.endswith('_2'):
+        # Top bar - invert the level for API (100% in UI = 0 in API = fully up)
         id1 = id[:-1] + '1'
         unit1 = GetDomoDeviceInfo(id1)
         if unit1:
             body['shade']['positions']['position1'] = convertLevelToPosition(Devices[unit1].sValue)
             body['shade']['positions']['posKind1'] = 1
-        body['shade']['positions']['position2'] = convertLevelToPosition(level)
+        body['shade']['positions']['position2'] = convertLevelToPosition(100 - level)
         body['shade']['positions']['posKind2'] = 2  
     else:
         body['shade']['positions']['position1'] = convertLevelToPosition(level)
